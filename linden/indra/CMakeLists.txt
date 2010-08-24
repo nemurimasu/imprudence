@@ -33,7 +33,6 @@ endif (NOT CMAKE_BUILD_TYPE)
 # see cmake/Prebuild.cmake for the counterpart code.
 file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/temp)
 file(WRITE ${CMAKE_BINARY_DIR}/temp/sentinel_installed "0")
-add_subdirectory(cmake)
 
 add_subdirectory(${LIBS_OPEN_PREFIX}llaudio)
 add_subdirectory(${LIBS_OPEN_PREFIX}llcharacter)
