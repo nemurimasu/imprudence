@@ -35,6 +35,7 @@ linden/indra/newview/installers/windows/imprudence_installer_icon_right.bmp
 linden/LICENSES/
 linden/LICENSE-libraries-*.txt
 linden/libraries/
+linden/indra/newview/mozilla-universal-darwin.tgz
 linden/indra/newview/app_settings/mozilla*/
 linden/indra/newview/fonts/
 linden/indra/newview/lib/
