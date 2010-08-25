@@ -3600,6 +3600,11 @@ void LLObjectBridge::buildContextMenu(LLMenuGL& menu, U32 flags)
 					{
 						LLVOAvatar::attachment_map_t::iterator curiter = iter++;
 						LLViewerJointAttachment* attachment = curiter->second;
+						if (attachment->getName().find("2") != std::string::npos && !attachment->getIsHUDAttachment())
+						{
+							// Skip the secondary attachment points.
+							continue;
+						}
 						LLMenuItemCallGL *new_item;
 						if (attachment->getIsHUDAttachment())
 						{
