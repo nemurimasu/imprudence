@@ -2073,6 +2073,11 @@ void LLVOAvatar::buildCharacter()
 				{
 					attachment_map_t::iterator curiter = iter++;
 					LLViewerJointAttachment* attachment = curiter->second;
+					if (attachment->getName().find("2") != std::string::npos && !attachment->getIsHUDAttachment())
+					{
+						// Skip the secondary attachment points.
+						continue;
+					}
 					if (attachment->getGroup() == i)
 					{
 						LLMenuItemCallGL* item;
@@ -2113,6 +2118,11 @@ void LLVOAvatar::buildCharacter()
 				{
 					attachment_map_t::iterator curiter = iter++;
 					LLViewerJointAttachment* attachment = curiter->second;
+					if (attachment->getName().find("2") != std::string::npos && !attachment->getIsHUDAttachment())
+					{
+						// Skip the secondary attachment points.
+						continue;
+					}
 					if (attachment->getGroup() == i)
 					{
 						gDetachPieMenu->append(new LLMenuItemCallGL(attachment->getName(),
@@ -2162,6 +2172,11 @@ void LLVOAvatar::buildCharacter()
 			{
 				attachment_map_t::iterator curiter = iter++;
 				LLViewerJointAttachment* attachment = curiter->second;
+				if (attachment->getName().find("2") != std::string::npos && !attachment->getIsHUDAttachment())
+				{
+					// Skip the secondary attachment points.
+					continue;
+				}
 				if (attachment->getIsHUDAttachment() != (pass == 1))
 				{
 					continue;
@@ -2201,6 +2216,11 @@ void LLVOAvatar::buildCharacter()
 			{
 				attachment_map_t::iterator curiter = iter++;
 				LLViewerJointAttachment* attachment = curiter->second;
+				if (attachment->getName().find("2") != std::string::npos && !attachment->getIsHUDAttachment())
+				{
+					// Skip the secondary attachment points.
+					continue;
+				}
 				if(attachment->getGroup() == group)
 				{
 					// use multimap to provide a partial order off of the pie slice key

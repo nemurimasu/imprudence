@@ -210,6 +210,11 @@ public:
 			{
 				LLVOAvatar::attachment_map_t::iterator curiter = iter++;
 				LLViewerJointAttachment* attachment = curiter->second;
+				if (attachment->getName().find("2") != std::string::npos && attachment->getName() != "Center 2")
+				{
+					// Skip secondary attachment points.
+					continue;
+				}
 				S32	attachment_pt = curiter->first;	
 				BOOL object_attached = ( attachment->getNumObjects() > 0 );
 				std::string name = std::string("checkbox_") + attachment->getName();
