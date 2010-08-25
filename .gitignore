@@ -37,7 +37,6 @@ linden/LICENSE-libraries-*.txt
 linden/libraries/
 linden/indra/newview/mozilla-universal-darwin.tgz
 linden/indra/newview/app_settings/mozilla*/
-linden/indra/newview/fonts/
 linden/indra/newview/lib/
 linden/indra/newview/dbghelp.dll
 linden/indra/newview/linux_tools/client-readme-voice.txt
