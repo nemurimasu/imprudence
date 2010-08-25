@@ -68,9 +68,14 @@ class ViewerManifest(LLManifest):
             self.end_prefix("app_settings")
 
         if self.prefix(src="character"):
+            self.exclude("avatar_lad.xml") # use Nemu's
             self.path("*.llm")
             self.path("*.xml")
             self.path("*.tga")
+            self.end_prefix("character")
+
+        if self.prefix(src="../../../nemu/indra/newview/character", dst="character"):
+            self.path("avatar_lad.xml")
             self.end_prefix("character")
 
         # Include our fonts

@@ -1154,6 +1154,8 @@ BOOL RlvHandler::processReplyCommand(const LLUUID& uuid, const RlvCommand& rlvCm
 						continue;
 
 					strAttachName = pAttachment->getName(); // Capitalized (see avatar_lad.xml)
+					if (strAttachName.find("2") != std::string::npos)
+						continue;
 					LLStringUtil::toLower(strAttachName);
 
 					#ifdef RLV_EXPERIMENTAL_COMPOSITE_FOLDING
@@ -1331,6 +1333,8 @@ void RlvHandler::initLookupTables()
 				if (pAttachPt)
 				{
 					strAttachPtName = pAttachPt->getName();
+					if (strAttachPtName.find("2") != std::string::npos)
+						continue;
 					LLStringUtil::toLower(strAttachPtName);
 					m_AttachLookup.addKeyword(strAttachPtName, itAttach->first);
 				}
