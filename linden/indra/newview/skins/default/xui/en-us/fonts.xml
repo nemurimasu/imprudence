@@ -19,41 +19,41 @@
   </font>
 
   <font name="SansSerif" comment="Name of san-serif font (Truetype file name)">
-    <file>LiberationSans-Regular.ttf</file>
+    <file>DejaVuSansCondensed.ttf</file>
   </font>
 
   <font name="SansSerifBold" 
 	comment="Name of bold sans-serif font" 
 	font_style="Bold">
-    <file>LiberationSans-Bold.ttf</file>
+    <file>DejaVuSansCondensed-Bold.ttf</file>
   </font>
 
   <font name="Monospace"
 	comment="Name of monospace font">
-    <file>VeraMono.ttf</file>
+    <file>DejaVuSansMono.ttf</file>
   </font>
 
   <font name="DejaVu"
 	comment="Name of DejaVu font">
-    <file>DejaVuSans.ttf</file>
+    <file>DejaVuSansCondensed.ttf</file>
   </font>
 
   <font name="DejaVu"
 	comment="Name of DejaVu font (bold)"
 	font_style="BOLD">
-    <file>DejaVuSansBold.ttf</file>
+    <file>DejaVuSansCondensed-Bold.ttf</file>
   </font>
 
   <font name="DejaVu"
 	comment="Name of DejaVu font (italic)"
 	font_style="ITALIC">
-    <file>DejaVuSansOblique.ttf</file>
+    <file>DejaVuSansCondensed-Oblique.ttf</file>
   </font>
 
   <font name="DejaVu"
 	comment="Name of DejaVu font (bold italic)"
 	font_style="BOLD|ITALIC">
-    <file>DejaVuSansBoldOblique.ttf</file>
+    <file>DejaVuSansCondensed-BoldOblique.ttf</file>
   </font>
 
   <font name="Helvetica"
