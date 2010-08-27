@@ -67,6 +67,7 @@
 #include "lltransactiontypes.h"
 #include "lluuid.h"
 #include "vorbisencode.h"
+#include "llnotecard.h"
 
 // system libraries
 #include <boost/tokenizer.hpp>
@@ -790,11 +791,64 @@ void upload_new_resource(const std::string& src_filename, std::string name,
 		upload_error(error_message, "DoNotSupportBulkAnimationUpload", filename, args);
 		return;
 	}
+	else if (exten == "lsl" || exten == "lsltext")
+	{
+		// skip forward and just copy to vfs as is
+		asset_type = LLAssetType::AT_LSL_TEXT;
+		filename = src_filename;
+	}
+	else if (exten == "txt")
+	{
+		// wrap text in a notecard
+		asset_type = LLAssetType::AT_NOTECARD;
+
+		LLFILE* in = LLFile::fopen(src_filename, "rb");		/* Flawfinder: ignore */
+		if (in)
+		{
+			char *textbuf = new char[65536];
+			S32 read;
+			std::string text;
+			read = fread(textbuf, 1, 65536, in);
+			fclose(in);
+			text.assign(textbuf, read);
+			delete textbuf;
+
+			LLNotecard notecard;
+			notecard.setText(text);
+			std::ostringstream stream;
+			notecard.exportStream(stream);
+			std::string notebuf = stream.str();
+
+			LLFILE* out = LLFile::fopen(filename, "wb");		/* Flawfinder: ignore */
+			if (out)
+			{
+				if (fwrite(notebuf.c_str(), 1, notebuf.length(), out) != read)
+				{
+					llwarns << "Short write" << llendl;
+				}
+				fclose(out);
+			}
+			else
+			{
+				llwarns << "Couldn't open temp file " << filename << llendl;
+			}
+		}
+		else
+		{
+			llwarns << "Couldn't open text file " << src_filename << llendl;
+		}
+	}
+	else if (exten == "notecard")
+	{
+		// skip forward and just copy to vfs as is
+		asset_type = LLAssetType::AT_NOTECARD;
+		filename = src_filename;
+	}
 	else
 	{
 		// Unknown extension
 		// *TODO: Translate?
-		error_message = llformat("Unknown file extension .%s\nExpected .wav, .tga, .bmp, .jpg, .jpeg, .png, or .bvh", exten.c_str());
+		error_message = llformat("Unknown file extension .%s\nExpected .wav, .tga, .bmp, .jpg, .jpeg, .png, .bvh, .lsl, .lsltext, .txt, or .notecard", exten.c_str());
 		error = TRUE;;
 	}
 
@@ -845,7 +899,7 @@ void upload_new_resource(const std::string& src_filename, std::string name,
 		LLSD args;
 		args["ERROR_MESSAGE"] = error_message;
 		LLNotifications::instance().add("ErrorMessage", args);
-		if(LLFile::remove(filename) == -1)
+		if(filename != src_filename && LLFile::remove(filename) == -1)
 		{
 			lldebugs << "unable to remove temp file" << llendl;
 		}
@@ -998,6 +1052,104 @@ void upload_done_callback(const LLUUID& uuid, void* user_data, S32 result, LLExt
 	}
 }
 
+class CreateTextCompleteUploadCallback : public LLUpdateAgentInventoryResponder
+{
+public:
+	CreateTextCompleteUploadCallback(const LLSD& post_data,
+									 const LLUUID& vfile_id,
+									 LLAssetType::EType asset_type,
+									 S32 expected_cost) : LLUpdateAgentInventoryResponder(post_data, vfile_id, asset_type)
+	{
+		mExpectedCost = expected_cost;
+	}
+	void uploadComplete(const LLSD& content)
+	{
+		LLUpdateAgentInventoryResponder::uploadComplete(content);
+		LLUploadDialog::modalUploadFinished();
+		// *NOTE: This is a pretty big hack. What this does is check the
+		// file picker if there are any more pending uploads. If so,
+		// upload that file.
+		const std::string& next_file = LLFilePicker::instance().getNextFile();
+		if(!next_file.empty())
+		{
+			std::string asset_name = gDirUtilp->getBaseFileName(next_file, true);
+			LLStringUtil::replaceNonstandardASCII( asset_name, '?' );
+			LLStringUtil::replaceChar(asset_name, '|', '?');
+			LLStringUtil::stripNonprintable(asset_name);
+			LLStringUtil::trim(asset_name);
+
+			std::string display_name = LLStringUtil::null;
+			LLAssetStorage::LLStoreAssetCallback callback = NULL;
+			void *userdata = NULL;
+			upload_new_resource(next_file, asset_name, asset_name,	// file
+								0, LLAssetType::AT_NONE, LLInventoryType::IT_NONE,
+								PERM_NONE, PERM_NONE, PERM_NONE,
+								display_name,
+								callback,
+								mExpectedCost, // assuming next in a group of uploads is of roughly the same type, i.e. same upload cost
+								userdata);
+		}
+	}
+	void error(U32 statusNum, const std::string& reason)
+	{
+		LLUpdateAgentInventoryResponder::error(statusNum, reason);
+		// continue
+		this->uploadComplete(NULL);
+	}
+private:
+	S32 mExpectedCost;
+};
+
+class CreateTextUploadCallback : public LLInventoryCallback
+{
+public:
+	CreateTextUploadCallback(const LLResourceData* data)
+	{
+		mData = data;
+	}
+	void fire(const LLUUID& inv_item)
+	{
+		if(!inv_item.isNull())
+		{
+			LLAssetType::EType asset_type = mData->mAssetInfo.mType;
+			std::string url;
+			if (asset_type == LLAssetType::AT_LSL_TEXT)
+				url = gAgent.getRegion()->getCapability("UpdateScriptAgent");
+			else if (asset_type == LLAssetType::AT_NOTECARD)
+				url = gAgent.getRegion()->getCapability("UpdateNotecardAgentInventory");
+			if (!url.empty())
+			{
+				LLSD body;
+				body["item_id"] = inv_item;
+				if (asset_type == LLAssetType::AT_LSL_TEXT)
+					body["target"] = "mono";
+				//std::ostringstream llsdxml;
+				//LLSDSerialize::toPrettyXML(body, llsdxml);
+				//llinfos << "posting body to capability: " << llsdxml.str() << llendl;
+				LLHTTPClient::post(url, body, new CreateTextCompleteUploadCallback(body, mData->mAssetInfo.mUuid, asset_type, mData->mExpectedUploadCost));
+			}
+			else
+			{
+				LLSD args;
+				args["FILE"] = LLInventoryType::lookupHumanReadable(mData->mInventoryType);
+				args["REASON"] = "Cannot get upload capability";
+				LLNotifications::instance().add("CannotUploadReason", args);
+			}
+		}
+		else
+		{
+			LLSD args;
+			args["FILE"] = LLInventoryType::lookupHumanReadable(mData->mInventoryType);
+			args["REASON"] = "Inventory creation failed";
+			LLNotifications::instance().add("CannotUploadReason", args);
+		}
+
+		delete mData;
+	}
+private:
+	const LLResourceData* mData;
+};
+
 void upload_new_resource(const LLTransactionID &tid, LLAssetType::EType asset_type,
 			 std::string name,
 			 std::string desc, S32 compression_info,
@@ -1032,6 +1184,11 @@ void upload_new_resource(const LLTransactionID &tid, LLAssetType::EType asset_ty
 	{
 		LLViewerStats::getInstance()->incStat(LLViewerStats::ST_UPLOAD_ANIM_COUNT );
 	}
+	else
+	if( LLAssetType::AT_LSL_TEXT == asset_type)
+	{
+		LLViewerStats::getInstance()->incStat(LLViewerStats::ST_LSL_SAVE_COUNT );
+	}
 
 	if(LLInventoryType::IT_NONE == inv_type)
 	{
@@ -1062,6 +1219,27 @@ void upload_new_resource(const LLTransactionID &tid, LLAssetType::EType asset_ty
 	lldebugs << "Folder: " << gInventory.findCategoryUUIDForType((destination_folder_type == LLAssetType::AT_NONE) ? asset_type : destination_folder_type) << llendl;
 	lldebugs << "Asset Type: " << LLAssetType::lookup(asset_type) << llendl;
 
+	if (LLAssetType::AT_LSL_TEXT == asset_type || LLAssetType::AT_NOTECARD == asset_type)
+	{
+		LLResourceData* data = new LLResourceData;
+		data->mAssetInfo.mTransactionID = tid;
+		data->mAssetInfo.mUuid = uuid;
+		data->mAssetInfo.mType = asset_type;
+		data->mAssetInfo.mCreatorID = gAgentID;
+		data->mInventoryType = inv_type;
+		data->mNextOwnerPerm = next_owner_perms;
+		data->mExpectedUploadCost = expected_upload_cost;
+		data->mUserData = userdata;
+		data->mAssetInfo.setName(name);
+		data->mAssetInfo.setDescription(desc);
+		data->mPreferredLocation = destination_folder_type;
+		LLPointer<LLInventoryCallback> cb = new CreateTextUploadCallback(data);
+		create_inventory_item(gAgent.getID(), gAgent.getSessionID(),
+							  gInventory.findCategoryUUIDForType((destination_folder_type == LLAssetType::AT_NONE) ? asset_type : destination_folder_type),
+							  tid, name, desc, asset_type, inv_type,
+							  NOT_WEARABLE, next_owner_perms, cb);
+		return;
+	}
 	std::string url = gAgent.getRegion()->getCapability("NewFileAgentInventory");
 	BOOL temporary_up = gSavedSettings.getBOOL("EmeraldTemporaryUpload");
 	gSavedSettings.setBOOL("EmeraldTemporaryUpload",FALSE);
@@ -1077,7 +1255,14 @@ void upload_new_resource(const LLTransactionID &tid, LLAssetType::EType asset_ty
 		body["next_owner_mask"] = LLSD::Integer(next_owner_perms);
 		body["group_mask"] = LLSD::Integer(group_perms);
 		body["everyone_mask"] = LLSD::Integer(everyone_perms);
-		body["expected_upload_cost"] = LLSD::Integer(expected_upload_cost);
+		if (LLAssetType::AT_SOUND == asset_type ||
+			LLAssetType::AT_TEXTURE == asset_type ||
+			LLAssetType::AT_ANIMATION == asset_type)
+		{
+			body["expected_upload_cost"] = LLSD::Integer(expected_upload_cost);
+		} else {
+			body["expected_upload_cost"] = LLSD::Integer(0);
+		}
 		
 		//std::ostringstream llsdxml;
 		//LLSDSerialize::toPrettyXML(body, llsdxml);
