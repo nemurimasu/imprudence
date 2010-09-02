@@ -77,6 +77,8 @@ S32 LLWorkerThread::update(U32 max_time_ms)
 		{
 			if (worker->getFlags(LLWorkerClass::WCF_WORK_FINISHED))
 			{
+				worker->clearFlags(LLWorkerClass::WCF_HAVE_WORK);
+				worker->setFlags(LLWorkerClass::WCF_DELETE_REQUESTED);
 				delete_list.push_back(worker);
 				mDeleteList.erase(curiter);
 			}
