@@ -580,7 +580,7 @@ class DarwinManifest(ViewerManifest):
 
                 self.path("libxml2.2.dylib")
                 self.path("libfaad.2.dylib")
-                self.path("libFLAC.8.dylib")
+                # use Nemu's version: self.path("libFLAC.8.dylib")
                 self.path("libintl.3.dylib")
                 self.path("libjpeg.62.dylib")
                 self.path("libpng12.0.dylib")
@@ -594,6 +594,10 @@ class DarwinManifest(ViewerManifest):
                 self.path("libvorbisfile.3.dylib")
 
                 self.end_prefix("../../libraries/universal-darwin/lib_release")
+
+            if self.prefix(src="../../../nemu/libraries/universal-darwin/lib_release", dst="MacOS"):
+                self.path("libFLAC.8.dylib")
+                self.end_prefix("MacOS")
 
             # replace the default theme with our custom theme (so scrollbars work).
             if self.prefix(src="mozilla-theme", dst="MacOS/chrome"):
